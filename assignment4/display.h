@@ -1,5 +1,5 @@
-#define  ENV_WIDTH       800
-#define  ENV_HEIGHT      600
+#define  ENV_WIDTH       740
+#define  ENV_HEIGHT      540
 
 
 // These are the external functions being used by the test program

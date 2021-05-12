@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <string.h>
+#include <stdio.h>
 #include <X11/Xlib.h>
 
 #include "obstacles.h"
@@ -29,7 +30,7 @@ void initializeWindow() {
   // make is visible and get ready to draw
   win = XCreateSimpleWindow(display,  RootWindow(display, 0), 0, 0,
 			    ENV_WIDTH, ENV_HEIGHT, 0, 0x000000, 0xFFFFFF);
-  XStoreName(display, win, "Path Planner");
+  XStoreName(display, win, "Path Maker");
   gc = XCreateGC(display, win, 0, NULL);
   XMapWindow(display, win);
   XFlush(display);
@@ -47,6 +48,9 @@ void closeWindow() {
 
 // Redraw all the obstacles and the edges and the vertices
 void displayEnvironment(Environment *env) {
+	Vertex    *v = NULL;
+	Neighbour *n = NULL;
+	
 	// Erase the background 
 	XSetForeground(display, gc, 0xFFFFFF);
     XFillRectangle(display, win, gc, 0, 0, ENV_WIDTH, ENV_HEIGHT);
@@ -54,37 +58,35 @@ void displayEnvironment(Environment *env) {
     // Draw all the obstacles
     for (int i=0; i<env->numObstacles; i++) {
 		XSetForeground(display, gc, OBSTACLE_COLOR);
-		XFillRectangle(display, win, gc, env->obstacles[i].x,ENV_HEIGHT-env->obstacles[i].y, env->obstacles[i].w, env->obstacles[i].h);
+		XFillRectangle(display, win, gc, env->obstacles[i].x,ENV_HEIGHT-env->obstacles[i].y, 
+						env->obstacles[i].w, env->obstacles[i].h);
 		XSetForeground(display, gc, BORDER_COLOR);
-		XDrawRectangle(display, win, gc, env->obstacles[i].x,ENV_HEIGHT-env->obstacles[i].y, env->obstacles[i].w, env->obstacles[i].h);
+		XDrawRectangle(display, win, gc, env->obstacles[i].x,ENV_HEIGHT-env->obstacles[i].y, 
+						env->obstacles[i].w, env->obstacles[i].h);
     }
 
     // Draw all the edges
     XSetForeground(display, gc, EDGE_COLOR);
-    for (int i=0; i<env->numVertices; i++) {
-		Neighbour *n = env->vertices[i].firstNeighbour;
+    v = env->firstVertex;
+	while (v != NULL) {
+		n = v->firstNeighbour;
 		while (n != NULL) {
-	  		XDrawLine(display, win, gc,
-		 		env->vertices[i].x,
-		 		ENV_HEIGHT-(env->vertices[i].y),
-		 		n->vertex->x,
-		 		ENV_HEIGHT-(n->vertex->y));
+			XDrawLine(display, win, gc, v->x, ENV_HEIGHT-(v->y), n->vertex->x, ENV_HEIGHT-(n->vertex->y));
 			n = n->next;
 		}
-    }
-    
+		v = v->nextVertex;
+	}
+	
     // Draw all the vertices
-    for (int i=0; i<env->numVertices; i++) {
+    v = env->firstVertex;
+    while(v != NULL) {
 		XSetForeground(display, gc, VERTEX_COLOR);
-		XFillArc(display, win, gc,
-			env->vertices[i].x-VERTEX_RADIUS,
-			ENV_HEIGHT-(env->vertices[i].y+VERTEX_RADIUS),
-			2*VERTEX_RADIUS, 2*VERTEX_RADIUS, 0, 360*64);
+		XFillArc(display, win, gc, v->x-VERTEX_RADIUS, ENV_HEIGHT-(v->y+VERTEX_RADIUS),
+				 2*VERTEX_RADIUS, 2*VERTEX_RADIUS, 0, 360*64);
 		XSetForeground(display, gc, BORDER_COLOR);
-		XDrawArc(display, win, gc,
-			env->vertices[i].x-VERTEX_RADIUS,
-			ENV_HEIGHT-(env->vertices[i].y+VERTEX_RADIUS),
-			2*VERTEX_RADIUS, 2*VERTEX_RADIUS, 0, 360*64);
+		XDrawArc(display, win, gc, v->x-VERTEX_RADIUS, ENV_HEIGHT-(v->y+VERTEX_RADIUS),
+				 2*VERTEX_RADIUS, 2*VERTEX_RADIUS, 0, 360*64);
+		v = v->nextVertex;
 	}
 
     XFlush(display);
